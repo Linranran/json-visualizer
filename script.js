@@ -12,8 +12,41 @@ const treeTab = document.querySelector('#treeTab');
 let currentValue = undefined;
 let currentView = 'text';
 
-const sample = '{"name":"张三","age":18,"skills":["JSON","可视化"],"active":true,"address":{"city":"北京","code":100000}}';
-input.value = sample;
+const examples = {
+  format: {
+    label: '格式化示例已填入，点击“格式化”查看缩进后的 JSON。',
+    value: '{"name":"张三","age":18,"skills":["JSON","可视化"],"active":true,"address":{"city":"北京","code":100000}}'
+  },
+  minify: {
+    label: '压缩示例已填入，点击“压缩”生成单行 JSON。',
+    value: `{
+  "name": "张三",
+  "age": 18,
+  "skills": [
+    "JSON",
+    "可视化"
+  ]
+}`
+  },
+  unescape: {
+    label: '去转义示例已填入，点击“去转义”还原 JSON。',
+    value: '"{\\"name\\":\\"张三\\",\\"age\\":18}"'
+  },
+  deepUnescape: {
+    label: '多层转义示例已填入，点击“去转义”连续解析多层字符串。',
+    value: '"\\"{\\\\\\"name\\\\\\":\\\\\\"张三\\\\\\",\\\\\\"age\\\\\\":18}\\""'
+  },
+  array: {
+    label: '数组示例已填入，可点击“格式化”或切换到树形视图查看数组结构。',
+    value: '[{"id":1,"title":"JSON 格式化"},{"id":2,"title":"JSON 去转义"}]'
+  },
+  invalid: {
+    label: '错误提示示例已填入，点击“格式化”查看解析错误。',
+    value: '{"name":"张三",}'
+  }
+};
+
+input.value = examples.format.value;
 
 function showMessage(text, type = 'success') {
   message.textContent = text;
@@ -298,6 +331,20 @@ function setView(view) {
   treeTab.setAttribute('aria-selected', String(!isText));
 }
 
+document.querySelectorAll('.example-btn').forEach(button => {
+  button.addEventListener('click', () => {
+    const example = examples[button.dataset.example];
+    input.value = example.value;
+    output.textContent = '';
+    currentValue = undefined;
+    searchInput.value = '';
+    tree.innerHTML = '<div class="summary">等待处理示例</div>';
+    updateCounts();
+    updateMeta(undefined);
+    showMessage(example.label);
+    input.focus();
+  });
+});
 document.querySelector('#formatBtn').addEventListener('click', formatJson);
 document.querySelector('#minifyBtn').addEventListener('click', minifyJson);
 document.querySelector('#unescapeBtn').addEventListener('click', unescapeJson);

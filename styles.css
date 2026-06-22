@@ -95,6 +95,7 @@ h1 {
 }
 
 .toolbar,
+.examples,
 .panel {
   border: 1px solid var(--line);
   border-radius: 18px;
@@ -159,6 +160,45 @@ button.ghost:hover,
   border: 0;
   outline: 0;
   color: var(--text);
+}
+
+.examples {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+  padding: 14px 16px;
+}
+
+.examples h2 {
+  font-size: 18px;
+  margin-bottom: 4px;
+}
+
+.examples p {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.example-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.example-btn {
+  border: 1px solid var(--line);
+  background: #ffffff;
+  color: var(--text);
+  padding: 8px 11px;
+}
+
+.example-btn:hover {
+  border-color: var(--primary);
+  background: #eef2ff;
+  color: var(--primary-dark);
 }
 
 .message {
@@ -345,6 +385,15 @@ mark {
   }
 
   .stats {
+    justify-content: flex-start;
+  }
+
+  .examples {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .example-buttons {
     justify-content: flex-start;
   }
 

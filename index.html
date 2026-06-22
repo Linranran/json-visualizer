@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>JSON 可视化工具</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app-shell">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">JSON Visualizer</p>
+        <h1>JSON 可视化工具</h1>
+        <p class="subtitle">格式化、压缩、去转义、转义、树形查看和搜索。</p>
+      </div>
+      <div class="stats" aria-label="统计信息">
+        <span id="inputCount">输入 0 字符</span>
+        <span id="outputCount">输出 0 字符</span>
+        <span id="jsonMeta">未解析</span>
+      </div>
+    </header>
+
+    <section class="toolbar" aria-label="操作工具栏">
+      <button id="formatBtn" type="button">格式化</button>
+      <button id="minifyBtn" type="button">压缩</button>
+      <button id="unescapeBtn" type="button">去转义</button>
+      <button id="escapeBtn" type="button">转义</button>
+      <button id="expandBtn" type="button">展开全部</button>
+      <button id="collapseBtn" type="button">折叠全部</button>
+      <button id="copyBtn" type="button">复制结果</button>
+      <button id="clearBtn" class="ghost" type="button">清空</button>
+      <label class="search-box">
+        <span>搜索</span>
+        <input id="searchInput" type="search" placeholder="key / value">
+      </label>
+    </section>
+
+    <section id="message" class="message" role="status" aria-live="polite"></section>
+
+    <section class="workspace">
+      <div class="panel input-panel">
+        <div class="panel-title">
+          <h2>输入</h2>
+          <span>粘贴 JSON 或转义后的 JSON 字符串</span>
+        </div>
+        <textarea id="input" spellcheck="false" placeholder='例如：{"name":"张三","age":18}'></textarea>
+      </div>
+
+      <div class="panel output-panel">
+        <div class="panel-title tabs">
+          <div>
+            <h2>结果</h2>
+            <span>文本结果或树形结构</span>
+          </div>
+          <div class="tab-buttons" role="tablist" aria-label="结果视图">
+            <button id="textTab" class="tab active" type="button" role="tab" aria-selected="true">文本</button>
+            <button id="treeTab" class="tab" type="button" role="tab" aria-selected="false">树形</button>
+          </div>
+        </div>
+        <pre id="output" class="output-view"></pre>
+        <div id="tree" class="tree-view hidden"></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>

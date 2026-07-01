@@ -162,14 +162,12 @@ function unescapeJson() {
 
 function escapeJson() {
   try {
-    let source = output.textContent.trim() || input.value.trim();
-    let value;
+    let source = input.value.trim();
 
     try {
-      value = JSON.parse(source);
-      source = JSON.stringify(value);
+      source = JSON.stringify(JSON.parse(source));
     } catch {
-      value = source;
+      // 输入不是合法 JSON 时，按普通字符串转义
     }
 
     const escaped = JSON.stringify(source);

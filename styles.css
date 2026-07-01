@@ -217,6 +217,9 @@ button.ghost:hover,
   border: 1px solid #fed7aa;
   background: var(--danger-bg);
   color: var(--danger);
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
 }
 
 .message.success {

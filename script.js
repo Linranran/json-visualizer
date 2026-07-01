@@ -40,6 +40,17 @@ const examples = {
     label: '数组示例已填入，可点击“格式化”或切换到树形视图查看数组结构。',
     value: '[{"id":1,"title":"JSON 格式化"},{"id":2,"title":"JSON 去转义"}]'
   },
+  repair: {
+    label: '修复示例已填入（含单引号、尾逗号、缺引号、注释、Python 值），点击“尝试修复”。',
+    value: `{
+  // 用户信息
+  name: '张三',
+  'age': 18,
+  active: True,
+  score: None,
+  skills: ['JSON', '可视化',],
+}`
+  },
   invalid: {
     label: '错误提示示例已填入，点击“格式化”查看解析错误。',
     value: '{"name":"张三",}'
@@ -124,12 +135,212 @@ function setResult(value, text, status = '处理完成') {
   showMessage(status);
 }
 
-function handleError(error) {
-  showMessage(`JSON 解析失败：${error.message}`, 'error');
+function buildErrorReport(text, error) {
+  const raw = error.message || String(error);
+  const match = raw.match(/position (\d+)/);
+  if (!match) return { short: `JSON 解析失败：${raw}` };
+
+  const pos = Math.min(Number(match[1]), text.length);
+  let line = 1;
+  let col = 1;
+  let lineStart = 0;
+  for (let k = 0; k < pos; k++) {
+    if (text[k] === '\n') {
+      line += 1;
+      col = 1;
+      lineStart = k + 1;
+    } else {
+      col += 1;
+    }
+  }
+
+  let lineEnd = text.indexOf('\n', pos);
+  if (lineEnd === -1) lineEnd = text.length;
+  let lineText = text.slice(lineStart, lineEnd);
+  let caret = pos - lineStart;
+
+  const WINDOW = 40;
+  if (caret > WINDOW) {
+    const cut = caret - WINDOW;
+    lineText = '…' + lineText.slice(cut);
+    caret = caret - cut + 1;
+  }
+  if (lineText.length > 90) lineText = lineText.slice(0, 90) + '…';
+
+  const pointer = ' '.repeat(Math.max(0, caret)) + '^';
+  return {
+    short: `JSON 解析失败（第 ${line} 行，第 ${col} 列）：${raw}`,
+    snippet: `${lineText}\n${pointer}`
+  };
+}
+
+function handleError(error, sourceText = input.value) {
+  const report = buildErrorReport(sourceText, error);
+  const text = report.snippet ? `${report.short}\n${report.snippet}` : report.short;
+  showMessage(text, 'error');
   currentValue = undefined;
   tree.innerHTML = '<div class="summary">无法生成树形视图</div>';
   updateMeta(undefined);
   updateCounts();
+}
+
+function repairJsonText(text) {
+  const src = String(text);
+  const n = src.length;
+  let i = 0;
+  let out = '';
+  const changes = [];
+
+  const isWs = c => c === ' ' || c === '\t' || c === '\n' || c === '\r';
+  const isIdentStart = c => /[A-Za-z_$]/.test(c);
+  const isIdent = c => /[A-Za-z0-9_$]/.test(c);
+
+  function nextNonWs(from) {
+    let j = from;
+    while (j < n) {
+      const c = src[j];
+      if (isWs(c)) { j += 1; continue; }
+      if (c === '/' && src[j + 1] === '/') {
+        j += 2;
+        while (j < n && src[j] !== '\n') j += 1;
+        continue;
+      }
+      if (c === '/' && src[j + 1] === '*') {
+        j += 2;
+        while (j < n && !(src[j] === '*' && src[j + 1] === '/')) j += 1;
+        j += 2;
+        continue;
+      }
+      return j;
+    }
+    return -1;
+  }
+
+  while (i < n) {
+    const c = src[i];
+
+    if (c === '/' && src[i + 1] === '/') {
+      i += 2;
+      while (i < n && src[i] !== '\n') i += 1;
+      changes.push('移除行注释');
+      continue;
+    }
+    if (c === '/' && src[i + 1] === '*') {
+      i += 2;
+      while (i < n && !(src[i] === '*' && src[i + 1] === '/')) i += 1;
+      i += 2;
+      changes.push('移除块注释');
+      continue;
+    }
+
+    if (c === '"') {
+      out += c;
+      i += 1;
+      while (i < n) {
+        const ch = src[i];
+        out += ch;
+        if (ch === '\\' && i + 1 < n) {
+          out += src[i + 1];
+          i += 2;
+          continue;
+        }
+        i += 1;
+        if (ch === '"') break;
+      }
+      continue;
+    }
+
+    if (c === "'") {
+      i += 1;
+      let str = '';
+      while (i < n && src[i] !== "'") {
+        if (src[i] === '\\' && i + 1 < n) {
+          str += src[i] + src[i + 1];
+          i += 2;
+          continue;
+        }
+        str += src[i];
+        i += 1;
+      }
+      i += 1;
+      out += '"' + str.replace(/"/g, '\\"') + '"';
+      changes.push('单引号转双引号');
+      continue;
+    }
+
+    if (c === ',') {
+      const nxt = nextNonWs(i + 1);
+      if (nxt !== -1 && (src[nxt] === '}' || src[nxt] === ']')) {
+        i += 1;
+        changes.push('移除多余逗号');
+        continue;
+      }
+      out += c;
+      i += 1;
+      continue;
+    }
+
+    if (isIdentStart(c)) {
+      let j = i;
+      while (j < n && isIdent(src[j])) j += 1;
+      const word = src.slice(i, j);
+      const after = nextNonWs(j);
+      const isKey = after !== -1 && src[after] === ':';
+
+      if (word === 'true' || word === 'false' || word === 'null') {
+        out += word;
+      } else if (word === 'True' || word === 'False') {
+        out += word.toLowerCase();
+        changes.push('Python 布尔值转小写');
+      } else if (word === 'None') {
+        out += 'null';
+        changes.push('None 转 null');
+      } else if (word === 'NaN' || word === 'Infinity') {
+        out += 'null';
+        changes.push(word + ' 转 null');
+      } else if (isKey) {
+        out += '"' + word + '"';
+        changes.push('给键名加引号');
+      } else {
+        out += '"' + word + '"';
+        changes.push('给字符串值加引号');
+      }
+      i = j;
+      continue;
+    }
+
+    out += c;
+    i += 1;
+  }
+
+  return { text: out, changes };
+}
+
+function repairJson() {
+  const raw = input.value;
+  if (!raw.trim()) {
+    showMessage('请先输入内容', 'error');
+    return;
+  }
+
+  try {
+    const value = JSON.parse(raw.trim());
+    setResult(value, JSON.stringify(value, null, 2), '本身已是合法 JSON，已直接格式化');
+    return;
+  } catch {
+    // 继续尝试修复
+  }
+
+  const { text, changes } = repairJsonText(raw);
+  try {
+    const value = JSON.parse(text.trim());
+    const summary = changes.length
+      ? `已尝试修复 ${changes.length} 处（${[...new Set(changes)].join('、')}），请核对结果`
+      : '已修复并格式化，请核对结果';
+    setResult(value, JSON.stringify(value, null, 2), summary);
+  } catch (error) {
+    handleError(error, text);
+  }
 }
 
 function formatJson() {
@@ -344,6 +555,7 @@ document.querySelectorAll('.example-btn').forEach(button => {
   });
 });
 document.querySelector('#formatBtn').addEventListener('click', formatJson);
+document.querySelector('#repairBtn').addEventListener('click', repairJson);
 document.querySelector('#minifyBtn').addEventListener('click', minifyJson);
 document.querySelector('#unescapeBtn').addEventListener('click', unescapeJson);
 document.querySelector('#escapeBtn').addEventListener('click', escapeJson);

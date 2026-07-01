@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>JSON 可视化工具</title>
-  <link rel="stylesheet" href="styles.css?v=2">
+  <link rel="stylesheet" href="styles.css?v=3">
 </head>
 <body>
   <main class="app-shell">
@@ -23,6 +23,7 @@
 
     <section class="toolbar" aria-label="操作工具栏">
       <button id="formatBtn" type="button">格式化</button>
+      <button id="repairBtn" type="button">尝试修复</button>
       <button id="minifyBtn" type="button">压缩</button>
       <button id="unescapeBtn" type="button">去转义</button>
       <button id="escapeBtn" type="button">转义</button>
@@ -47,6 +48,7 @@
         <button class="example-btn" type="button" data-example="unescape">去转义示例</button>
         <button class="example-btn" type="button" data-example="deepUnescape">多层转义示例</button>
         <button class="example-btn" type="button" data-example="array">数组示例</button>
+        <button class="example-btn" type="button" data-example="repair">修复示例</button>
         <button class="example-btn" type="button" data-example="invalid">错误提示示例</button>
       </div>
     </section>
@@ -79,6 +81,6 @@
     </section>
   </main>
 
-  <script src="script.js?v=2"></script>
+  <script src="script.js?v=3"></script>
 </body>
 </html>

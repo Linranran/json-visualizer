@@ -36,6 +36,10 @@ const examples = {
     label: '多层转义示例已填入，点击“去转义”连续解析多层字符串。',
     value: '"\\"{\\\\\\"name\\\\\\":\\\\\\"张三\\\\\\",\\\\\\"age\\\\\\":18}\\""'
   },
+  nested: {
+    label: '嵌套 JSON 字符串示例已填入，点击“去转义”把 content 里的 JSON 字符串展开成对象。',
+    value: '{"score":0.4177,"label":"000","content":"{\\"input\\":\\"[\\\\\\"真实\\\\\\"]\\",\\"final\\":{\\"risk\\":0.4177,\\"category\\":\\"正常\\"},\\"chatling\\":{}}"}'
+  },
   array: {
     label: '数组示例已填入，可点击“格式化”或切换到树形视图查看数组结构。',
     value: '[{"id":1,"title":"JSON 格式化"},{"id":2,"title":"JSON 去转义"}]'
@@ -87,6 +91,39 @@ function deepParseJson(text, maxDepth = 5) {
     } catch {
       return value;
     }
+  }
+
+  return value;
+}
+
+function expandNestedJson(value, maxDepth = 8) {
+  if (maxDepth <= 0) return value;
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    const looksLikeJson = trimmed.startsWith('{') || trimmed.startsWith('[');
+    if (!looksLikeJson) return value;
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (parsed !== null && typeof parsed === 'object') {
+        return expandNestedJson(parsed, maxDepth - 1);
+      }
+    } catch {
+      // 不是嵌套 JSON 字符串，原样保留
+    }
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    return value.map(item => expandNestedJson(item, maxDepth - 1));
+  }
+
+  if (value !== null && typeof value === 'object') {
+    const result = {};
+    for (const [key, child] of Object.entries(value)) {
+      result[key] = expandNestedJson(child, maxDepth - 1);
+    }
+    return result;
   }
 
   return value;
@@ -363,9 +400,9 @@ function minifyJson() {
 
 function unescapeJson() {
   try {
-    const value = deepParseJson(input.value);
+    const value = expandNestedJson(deepParseJson(input.value));
     const text = stringifyForDisplay(value, 2);
-    setResult(value, text, '去转义完成');
+    setResult(value, text, '去转义完成（已展开嵌套 JSON 字符串）');
   } catch (error) {
     handleError(error);
   }
